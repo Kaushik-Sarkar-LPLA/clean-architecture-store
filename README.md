@@ -109,6 +109,61 @@ Key design decisions are documented as [Architecture Decision Records](docs/deci
 
 - 📖 [Clean Architecture Solution Template documentation](https://cleanarchitecture.jasontaylor.dev)
 
+## Developer Workflow (Branching, PRs & Deployment)
+
+This repository follows enterprise GitOps with automated testing and Coolify deployment on host `priyanka`.
+
+```mermaid
+graph LR
+    A[main] -->|git checkout -b feature/SCRUM-X| B[Feature Branch]
+    B -->|Local Code & Tests| C[git commit & push]
+    C -->|Create PR to main| D[GitHub PR Review & Approval]
+    D -->|Squash & Merge| E[main branch]
+    E -->|GitHub Action deploy.yml| F[Coolify Production Deploy]
+    F -->|Live Rollout| G[store.pixilens.online]
+```
+
+### 1. Create a Feature Branch
+Do not commit directly to `main`. For every Jira ticket (`SCRUM-6`, `SCRUM-7`, `SCRUM-10`, etc.), branch off the latest `main`:
+
+```bash
+git checkout main
+git pull origin main
+git checkout -b feature/SCRUM-6-inventory-tracking
+```
+
+### 2. Local Development & Testing
+Run tests locally to validate Clean Architecture boundaries, FluentValidation rules, and MediatR handlers:
+
+```bash
+# Build solution
+dotnet build
+
+# Run unit tests
+dotnet test --configuration Release
+```
+
+### 3. Commit and Push
+```bash
+git add .
+git commit -m "feat(inventory): implement Product stock deduction command and validator (SCRUM-6)"
+git push -u origin feature/SCRUM-6-inventory-tracking
+```
+
+### 4. Create Pull Request & Await Approval
+1. Go to [GitHub Pull Requests](https://github.com/Kaushik-Sarkar-LPLA/clean-architecture-store/pulls).
+2. Open a Pull Request from `feature/SCRUM-6-inventory-tracking` into `main`.
+3. Provide a clear PR description referencing the Jira ticket ID.
+4. Have the PR reviewed and approved.
+
+### 5. Deploy to Production
+Once approved and merged into `main`, deployment is triggered automatically or on-demand:
+- **Automated**: Any push/merge to `main` automatically runs `.github/workflows/deploy.yml` which validates tests and invokes Coolify to rebuild and restart the Docker container on server `priyanka`.
+- **Manual Trigger (GitHub Actions)**:
+  1. Open [Actions -> Deploy to Production (Coolify)](https://github.com/Kaushik-Sarkar-LPLA/clean-architecture-store/actions/workflows/deploy.yml).
+  2. Click **Run workflow** -> Select `Branch: main` -> Click **Run workflow**.
+- **Live Endpoint**: [https://store.pixilens.online](https://store.pixilens.online) (Swagger / Scalar UI: `/scalar/v1`)
+
 ## Support
 
 If you are having problems, please let me know by [raising a new issue](https://github.com/jasontaylordev/CleanArchitecture/issues/new/choose).
