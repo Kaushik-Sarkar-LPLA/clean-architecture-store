@@ -1,15 +1,12 @@
 name: Deploy to Production (Coolify)
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       reason:
-        description: 'Manual deployment trigger reason'
+        description: 'Manual deployment trigger reason / Release notes'
         required: false
-        default: 'Manual deploy triggered via GitHub Actions'
+        default: 'Manual production deploy triggered via GitHub Actions'
 
 concurrency:
   group: production-deploy

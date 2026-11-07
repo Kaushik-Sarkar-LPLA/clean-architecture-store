@@ -119,7 +119,7 @@ graph LR
     B -->|Local Code & Tests| C[git commit & push]
     C -->|Create PR to main| D[GitHub PR Review & Approval]
     D -->|Squash & Merge| E[main branch]
-    E -->|GitHub Action deploy.yml| F[Coolify Production Deploy]
+    E -->|Manual Trigger via GitHub Actions| F[Coolify Production Deploy]
     F -->|Live Rollout| G[store.pixilens.online]
 ```
 
@@ -154,15 +154,17 @@ git push -u origin feature/SCRUM-6-inventory-tracking
 1. Go to [GitHub Pull Requests](https://github.com/Kaushik-Sarkar-LPLA/clean-architecture-store/pulls).
 2. Open a Pull Request from `feature/SCRUM-6-inventory-tracking` into `main`.
 3. Provide a clear PR description referencing the Jira ticket ID.
-4. Have the PR reviewed and approved.
+4. Have the PR reviewed and approved by the team lead.
+5. Squash & Merge the PR into `main`.
 
-### 5. Deploy to Production
-Once approved and merged into `main`, deployment is triggered automatically or on-demand:
-- **Automated**: Any push/merge to `main` automatically runs `.github/workflows/deploy.yml` which validates tests and invokes Coolify to rebuild and restart the Docker container on server `priyanka`.
-- **Manual Trigger (GitHub Actions)**:
-  1. Open [Actions -> Deploy to Production (Coolify)](https://github.com/Kaushik-Sarkar-LPLA/clean-architecture-store/actions/workflows/deploy.yml).
-  2. Click **Run workflow** -> Select `Branch: main` -> Click **Run workflow**.
-- **Live Endpoint**: [https://store.pixilens.online](https://store.pixilens.online) (Swagger / Scalar UI: `/scalar/v1`)
+### 5. Manual Production Deployment (No Auto-Deploys)
+**Important:** Merging to `main` does **not** automatically deploy. The developer must manually trigger the deployment workflow in GitHub Actions when ready:
+1. Navigate to [Actions -> Deploy to Production (Coolify)](https://github.com/Kaushik-Sarkar-LPLA/clean-architecture-store/actions/workflows/deploy.yml).
+2. Click the **Run workflow** dropdown on the right.
+3. Keep `Branch: main` selected.
+4. (Optional) Enter a deployment reason / release note.
+5. Click **Run workflow**.
+6. The workflow will run the full test suite, trigger Coolify container rebuild on server `priyanka`, and verify that [https://store.pixilens.online/scalar/v1](https://store.pixilens.online/scalar/v1) returns HTTP 200 OK.
 
 ## Support
 
