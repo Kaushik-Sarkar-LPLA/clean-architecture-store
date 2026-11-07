@@ -1,9 +1,9 @@
 # Multi-stage Dockerfile for .NET 10 Clean Architecture Web API + Angular Client
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
-# Install Node.js (v20) and npm for Angular SpaRoot build
+# Install Node.js (v22 LTS) and npm for Angular 19+ SpaRoot build
 RUN apt-get update && apt-get install -y curl && \
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get install -y nodejs && \
     npm install -g @angular/cli && \
     rm -rf /var/lib/apt/lists/*
