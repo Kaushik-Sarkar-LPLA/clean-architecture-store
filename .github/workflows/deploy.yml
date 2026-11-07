@@ -37,6 +37,9 @@ jobs:
       - name: Compile Solution (Release)
         run: dotnet build --no-restore --configuration Release
 
+      - name: Install Playwright browsers (for Acceptance Tests)
+        run: pwsh artifacts/bin/Web.AcceptanceTests/release/playwright.ps1 install --with-deps chromium
+
       - name: Run xUnit Unit & Integration Tests
         run: dotnet test --no-build --configuration Release --verbosity normal
 
