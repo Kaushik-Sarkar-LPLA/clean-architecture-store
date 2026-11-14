@@ -14,11 +14,14 @@ builder.AddWebServices();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// Apply pending EF Core migrations in every environment; seed demo data in Development only.
+// Skipped when the build-time OpenAPI generator (GetDocument.Insider) loads the app.
+if (System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name != "GetDocument.Insider")
 {
-    await app.InitialiseDatabaseAsync();
+    await app.InitialiseDatabaseAsync(seed: app.Environment.IsDevelopment());
 }
-else
+
+if (!app.Environment.IsDevelopment())
 {
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
@@ -37,15 +40,10 @@ app.MapScalarApiReference();
 
 app.UseExceptionHandler(options => { });
 
-#if (UseApiOnly)
-app.Map("/", () => Results.Redirect("/scalar"));
-#endif
 
 app.MapDefaultEndpoints();
 app.MapEndpoints(typeof(Program).Assembly);
 
-#if (!UseApiOnly)
 app.MapFallbackToFile("index.html");
-#endif
 
 app.Run();
