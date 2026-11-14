@@ -4,6 +4,7 @@ using CleanArchitecture.Domain.ValueObjects;
 using CleanArchitecture.Infrastructure.Identity;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -11,14 +12,18 @@ namespace CleanArchitecture.Infrastructure.Data;
 
 public static class InitialiserExtensions
 {
-    public static async Task InitialiseDatabaseAsync(this WebApplication app)
+    public static async Task InitialiseDatabaseAsync(this WebApplication app, bool seed = true)
     {
         using var scope = app.Services.CreateScope();
 
         var initialiser = scope.ServiceProvider.GetRequiredService<ApplicationDbContextInitialiser>();
 
         await initialiser.InitialiseAsync();
-        await initialiser.SeedAsync();
+
+        if (seed)
+        {
+            await initialiser.SeedAsync();
+        }
     }
 }
 
@@ -42,8 +47,8 @@ public class ApplicationDbContextInitialiser
         try
         {
             // See https://jasontaylor.dev/ef-core-database-initialisation-strategies
-            await _context.Database.EnsureDeletedAsync();
-            await _context.Database.EnsureCreatedAsync();
+            // Apply EF Core migrations (never drop the database).
+            await _context.Database.MigrateAsync();
         }
         catch (Exception ex)
         {
