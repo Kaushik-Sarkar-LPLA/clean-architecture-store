@@ -1,5 +1,6 @@
-﻿using CleanArchitecture.Domain.Constants;
+using CleanArchitecture.Domain.Constants;
 using CleanArchitecture.Domain.Entities;
+using CleanArchitecture.Domain.Enums;
 using CleanArchitecture.Domain.ValueObjects;
 using CleanArchitecture.Infrastructure.Identity;
 using Microsoft.AspNetCore.Builder;
@@ -88,7 +89,7 @@ public class ApplicationDbContextInitialiser
             await _userManager.CreateAsync(administrator, "Administrator1!");
             if (!string.IsNullOrWhiteSpace(administratorRole.Name))
             {
-                await _userManager.AddToRolesAsync(administrator, new [] { administratorRole.Name });
+                await _userManager.AddToRolesAsync(administrator, new[] { administratorRole.Name });
             }
         }
 
@@ -108,6 +109,37 @@ public class ApplicationDbContextInitialiser
                     new TodoItem { Title = "Reward yourself with a nice, long nap 🏆" },
                 }
             });
+
+            await _context.SaveChangesAsync();
+        }
+
+        if (!_context.Coupons.Any())
+        {
+            _context.Coupons.AddRange(
+                new Coupon
+                {
+                    Code = "SAVE20",
+                    Type = DiscountType.Percentage,
+                    DiscountValue = 20m,
+                    MinOrderSubtotal = 50m,
+                    MaxDiscountAmount = 50m,
+                    ExpiryDateUtc = DateTime.UtcNow.AddMonths(6),
+                    IsActive = true,
+                    UsageCount = 0,
+                    MaxUsageLimit = 100
+                },
+                new Coupon
+                {
+                    Code = "FLAT10",
+                    Type = DiscountType.FixedAmount,
+                    DiscountValue = 10m,
+                    MinOrderSubtotal = 30m,
+                    MaxDiscountAmount = null,
+                    ExpiryDateUtc = DateTime.UtcNow.AddMonths(6),
+                    IsActive = true,
+                    UsageCount = 0,
+                    MaxUsageLimit = null
+                });
 
             await _context.SaveChangesAsync();
         }
