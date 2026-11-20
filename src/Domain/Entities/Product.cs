@@ -14,6 +14,12 @@ public class Product : BaseAuditableEntity
     public int ReorderLevel { get; set; } = 5;
     public bool IsActive { get; set; }
 
+
+    public decimal AverageRating { get; set; } = 0m;
+    public int TotalReviewsCount { get; set; } = 0;
+    public ICollection<Review> Reviews { get; set; } = new List<Review>();
+
+
     public bool TryDeductStock(int quantity)
     {
         if (StockQuantity >= quantity)

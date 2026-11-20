@@ -33,6 +33,15 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
             .HasColumnType("xid")
             .ValueGeneratedOnAddOrUpdate()
             .IsConcurrencyToken();
+
+
+        builder.Property(p => p.AverageRating)
+            .HasPrecision(3, 2)
+            .HasDefaultValue(0m);
+
+        builder.Property(p => p.TotalReviewsCount)
+            .HasDefaultValue(0);
+
     }
 }
 

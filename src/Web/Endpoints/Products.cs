@@ -1,5 +1,7 @@
 using CleanArchitecture.Application.Products.Commands.DeductProductStock;
 using Microsoft.AspNetCore.Http.HttpResults;
+using CleanArchitecture.Application.Reviews.Commands.CreateReview;
+
 
 namespace CleanArchitecture.Web.Endpoints;
 
@@ -10,6 +12,10 @@ public class Products : IEndpointGroup
         groupBuilder.RequireAuthorization();
 
         groupBuilder.MapPost(DeductStock, "{id}/deduct-stock");
+
+        groupBuilder.MapPost("/{productId:int}/reviews", CreateProductReview)
+        .WithName("CreateProductReview");
+
     }
 
     [EndpointSummary("Deduct product stock")]
@@ -34,4 +40,20 @@ public class Products : IEndpointGroup
 
         return TypedResults.Ok(result);
     }
+
+    public static async Task<IResult> CreateProductReview(
+    ISender sender,
+    int productId,
+    CreateReviewCommand command)
+{
+    if (productId != command.ProductId)
+    {
+        return Results.BadRequest("Route productId does not match command ProductId.");
+    }
+
+    var reviewId = await sender.Send(command);
+
+    return Results.Created($"/api/Products/{productId}/reviews/{reviewId}", reviewId);
+}
+
 }
