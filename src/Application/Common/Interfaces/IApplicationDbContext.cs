@@ -12,5 +12,7 @@ public interface IApplicationDbContext
 
     DbSet<Coupon> Coupons { get; }
 
+    DbSet<Review> Reviews { get; } 
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }
