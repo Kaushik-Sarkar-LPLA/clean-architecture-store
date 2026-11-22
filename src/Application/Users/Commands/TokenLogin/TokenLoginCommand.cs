@@ -1,4 +1,5 @@
 using CleanArchitecture.Application.Common.Interfaces;
+using CleanArchitecture.Domain.Entities;
 using MediatR;
 
 namespace CleanArchitecture.Application.Users.Commands.TokenLogin;
@@ -11,7 +12,8 @@ public record TokenLoginCommand : IRequest<TokenResponseDto>
 
 public class TokenLoginCommandHandler(
     IIdentityService identityService,
-    IJwtTokenService jwtTokenService)
+    IJwtTokenService jwtTokenService,
+    IApplicationDbContext context)
     : IRequestHandler<TokenLoginCommand, TokenResponseDto>
 {
     public async Task<TokenResponseDto> Handle(TokenLoginCommand request, CancellationToken cancellationToken)
@@ -26,13 +28,25 @@ public class TokenLoginCommandHandler(
         }
 
         var tokenResult = await jwtTokenService.GenerateAccessTokenAsync(userId, email, roles);
+        var refreshTokenValue = jwtTokenService.GenerateRefreshToken();
+
+        var refreshToken = new RefreshToken
+        {
+            Token = refreshTokenValue,
+            UserId = userId,
+            ExpiryDateUtc = DateTime.UtcNow.AddDays(7),
+            IsRevoked = false
+        };
+
+        context.RefreshTokens.Add(refreshToken);
+        await context.SaveChangesAsync(cancellationToken);
 
         return new TokenResponseDto
         {
             AccessToken = tokenResult.AccessToken,
             TokenType = "Bearer",
             ExpiresIn = tokenResult.ExpiresIn,
-            RefreshToken = string.Empty
+            RefreshToken = refreshTokenValue
         };
     }
 }

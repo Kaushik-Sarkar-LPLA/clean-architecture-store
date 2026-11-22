@@ -93,6 +93,7 @@ public class JwtTokenServiceTests
         // Arrange
         var identityServiceMock = new Mock<IIdentityService>();
         var jwtServiceMock = new Mock<IJwtTokenService>();
+        var contextMock = new Mock<IApplicationDbContext>();
 
         identityServiceMock
             .Setup(x => x.AuthenticateAsync("admin@pixilens.online", "WrongPassword!"))
@@ -100,7 +101,8 @@ public class JwtTokenServiceTests
 
         var handler = new TokenLoginCommandHandler(
             identityServiceMock.Object,
-            jwtServiceMock.Object);
+            jwtServiceMock.Object,
+            contextMock.Object);
 
         var command = new TokenLoginCommand
         {
@@ -114,6 +116,9 @@ public class JwtTokenServiceTests
 
         jwtServiceMock.Verify(
             x => x.GenerateAccessTokenAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>()),
+            Times.Never);
+        contextMock.Verify(
+            x => x.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
