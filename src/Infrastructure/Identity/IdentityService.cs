@@ -8,15 +8,18 @@ namespace CleanArchitecture.Infrastructure.Identity;
 public class IdentityService : IIdentityService
 {
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly IUserClaimsPrincipalFactory<ApplicationUser> _userClaimsPrincipalFactory;
     private readonly IAuthorizationService _authorizationService;
 
     public IdentityService(
         UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager,
         IUserClaimsPrincipalFactory<ApplicationUser> userClaimsPrincipalFactory,
         IAuthorizationService authorizationService)
     {
         _userManager = userManager;
+        _signInManager = signInManager;
         _userClaimsPrincipalFactory = userClaimsPrincipalFactory;
         _authorizationService = authorizationService;
     }
@@ -76,9 +79,12 @@ public class IdentityService : IIdentityService
             return (false, string.Empty, string.Empty, Array.Empty<string>());
         }
 
-        var isPasswordValid = await _userManager.CheckPasswordAsync(user, password);
+        var signInResult = await _signInManager.CheckPasswordSignInAsync(
+            user,
+            password,
+            lockoutOnFailure: true);
 
-        if (!isPasswordValid)
+        if (!signInResult.Succeeded)
         {
             return (false, string.Empty, string.Empty, Array.Empty<string>());
         }

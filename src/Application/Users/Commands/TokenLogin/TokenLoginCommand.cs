@@ -1,6 +1,5 @@
 using CleanArchitecture.Application.Common.Interfaces;
 using MediatR;
-using Microsoft.Extensions.Configuration;
 
 namespace CleanArchitecture.Application.Users.Commands.TokenLogin;
 
@@ -12,8 +11,7 @@ public record TokenLoginCommand : IRequest<TokenResponseDto>
 
 public class TokenLoginCommandHandler(
     IIdentityService identityService,
-    IJwtTokenService jwtTokenService,
-    IConfiguration configuration)
+    IJwtTokenService jwtTokenService)
     : IRequestHandler<TokenLoginCommand, TokenResponseDto>
 {
     public async Task<TokenResponseDto> Handle(TokenLoginCommand request, CancellationToken cancellationToken)
@@ -27,14 +25,13 @@ public class TokenLoginCommandHandler(
             throw new UnauthorizedAccessException("Invalid credentials.");
         }
 
-        var accessToken = await jwtTokenService.GenerateAccessTokenAsync(userId, email, roles);
-        var expiryMinutes = configuration.GetValue<int>("JwtSettings:ExpiryMinutes", 60);
+        var tokenResult = await jwtTokenService.GenerateAccessTokenAsync(userId, email, roles);
 
         return new TokenResponseDto
         {
-            AccessToken = accessToken,
+            AccessToken = tokenResult.AccessToken,
             TokenType = "Bearer",
-            ExpiresIn = expiryMinutes * 60,
+            ExpiresIn = tokenResult.ExpiresIn,
             RefreshToken = string.Empty
         };
     }

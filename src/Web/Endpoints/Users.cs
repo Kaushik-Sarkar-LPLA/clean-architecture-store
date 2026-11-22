@@ -21,7 +21,7 @@ public class Users : IEndpointGroup
 
     [EndpointSummary("Authenticate user and issue JWT access token")]
     [EndpointDescription("Validates user email and password credentials and returns a signed 60-minute JWT Bearer access token.")]
-    public static async Task<Results<Ok<TokenResponseDto>, UnauthorizedHttpResult>> TokenLogin(
+    public static async Task<Ok<TokenResponseDto>> TokenLogin(
         ISender sender,
         TokenLoginCommand command)
     {
