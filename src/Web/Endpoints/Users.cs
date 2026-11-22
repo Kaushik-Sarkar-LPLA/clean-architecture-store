@@ -1,4 +1,5 @@
-﻿using CleanArchitecture.Infrastructure.Identity;
+using CleanArchitecture.Application.Users.Commands.TokenLogin;
+using CleanArchitecture.Infrastructure.Identity;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +12,21 @@ public class Users : IEndpointGroup
     {
         groupBuilder.MapIdentityApi<ApplicationUser>();
 
+        groupBuilder.MapPost("/token-login", TokenLogin)
+            .WithName("TokenLogin")
+            .AllowAnonymous();
+
         groupBuilder.MapPost(Logout, "logout").RequireAuthorization();
+    }
+
+    [EndpointSummary("Authenticate user and issue JWT access token")]
+    [EndpointDescription("Validates user email and password credentials and returns a signed 60-minute JWT Bearer access token.")]
+    public static async Task<Results<Ok<TokenResponseDto>, UnauthorizedHttpResult>> TokenLogin(
+        ISender sender,
+        TokenLoginCommand command)
+    {
+        var result = await sender.Send(command);
+        return TypedResults.Ok(result);
     }
 
     [EndpointSummary("Log out")]
