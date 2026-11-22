@@ -2,22 +2,24 @@ using CleanArchitecture.Application.Common.Interfaces;
 using CleanArchitecture.Application.Common.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 
 namespace CleanArchitecture.Infrastructure.Identity;
 
 public class IdentityService : IIdentityService
 {
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly IUserClaimsPrincipalFactory<ApplicationUser> _userClaimsPrincipalFactory;
     private readonly IAuthorizationService _authorizationService;
 
     public IdentityService(
         UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager,
         IUserClaimsPrincipalFactory<ApplicationUser> userClaimsPrincipalFactory,
         IAuthorizationService authorizationService)
     {
         _userManager = userManager;
+        _signInManager = signInManager;
         _userClaimsPrincipalFactory = userClaimsPrincipalFactory;
         _authorizationService = authorizationService;
     }
@@ -63,6 +65,33 @@ public class IdentityService : IIdentityService
         var result = await _authorizationService.AuthorizeAsync(principal, policyName);
 
         return result.Succeeded;
+    }
+
+    public async Task<(bool Succeeded, string UserId, string Email, IList<string> Roles)> AuthenticateAsync(
+        string email,
+        string password)
+    {
+        var user = await _userManager.FindByEmailAsync(email)
+                   ?? await _userManager.FindByNameAsync(email);
+
+        if (user is null)
+        {
+            return (false, string.Empty, string.Empty, Array.Empty<string>());
+        }
+
+        var signInResult = await _signInManager.CheckPasswordSignInAsync(
+            user,
+            password,
+            lockoutOnFailure: true);
+
+        if (!signInResult.Succeeded)
+        {
+            return (false, string.Empty, string.Empty, Array.Empty<string>());
+        }
+
+        var roles = await _userManager.GetRolesAsync(user);
+
+        return (true, user.Id, user.Email ?? user.UserName ?? email, roles);
     }
 
     public async Task<Result> DeleteUserAsync(string userId)

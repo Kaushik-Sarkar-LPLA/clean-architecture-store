@@ -1,4 +1,4 @@
-﻿using CleanArchitecture.Application.Common.Models;
+using CleanArchitecture.Application.Common.Models;
 
 namespace CleanArchitecture.Application.Common.Interfaces;
 
@@ -13,4 +13,6 @@ public interface IIdentityService
     Task<(Result Result, string UserId)> CreateUserAsync(string userName, string password);
 
     Task<Result> DeleteUserAsync(string userId);
+
+    Task<(bool Succeeded, string UserId, string Email, IList<string> Roles)> AuthenticateAsync(string email, string password);
 }
