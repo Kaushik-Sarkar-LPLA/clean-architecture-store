@@ -1,5 +1,4 @@
 using System.Linq.Expressions;
-
 using Ardalis.GuardClauses;
 using CleanArchitecture.Application.Common.Interfaces;
 using CleanArchitecture.Application.Reviews.Commands.CreateReview;
@@ -142,6 +141,66 @@ public class CreateReviewTests
         _contextMock.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    [Test]
+    public async Task Handle_ConcurrencyConflictOnFirstSave_ShouldRetryAndSucceed()
+    {
+        var existingReview = new Review
+        {
+            Id = 1,
+            ProductId = 1,
+            Rating = 5,
+            ReviewerName = "Alice",
+            Comment = "Great product overall!"
+        };
+
+        var product = new Product
+        {
+            Id = 1,
+            Name = "Wireless Mechanical Keyboard",
+            AverageRating = 5.00m,
+            TotalReviewsCount = 1,
+            Reviews = new List<Review> { existingReview }
+        };
+
+        var productsMock = CreateMockDbSet(new List<Product> { product });
+        var reviewsMock = CreateMockDbSet(new List<Review> { existingReview });
+
+        reviewsMock.Setup(r => r.Add(It.IsAny<Review>()))
+            .Callback<Review>(r => r.Id = 2);
+
+        _contextMock.Setup(c => c.Products).Returns(productsMock.Object);
+        _contextMock.Setup(c => c.Reviews).Returns(reviewsMock.Object);
+
+        var saveAttempts = 0;
+        _contextMock.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(() =>
+            {
+                saveAttempts++;
+                if (saveAttempts == 1)
+                {
+                    throw new DbUpdateConcurrencyException("Simulated concurrent update");
+                }
+
+                return Task.FromResult(1);
+            });
+
+        var command = new CreateReviewCommand
+        {
+            ProductId = 1,
+            Rating = 3,
+            ReviewerName = "Priyanka",
+            Comment = "Solid keyboard, works as expected!"
+        };
+
+        var resultId = await _handler.Handle(command, CancellationToken.None);
+
+        resultId.ShouldBe(2);
+        saveAttempts.ShouldBe(2);
+        product.TotalReviewsCount.ShouldBe(2);
+        product.AverageRating.ShouldBe(4.00m);
+        reviewsMock.Verify(r => r.Add(It.IsAny<Review>()), Times.Exactly(2));
+    }
+
     private static Mock<DbSet<T>> CreateMockDbSet<T>(List<T> data) where T : class
     {
         var queryable = data.AsQueryable();
@@ -217,3 +276,4 @@ public class CreateReviewTests
         public ValueTask<bool> MoveNextAsync() => new(_inner.MoveNext());
     }
 }
+

@@ -1,7 +1,6 @@
 using CleanArchitecture.Application.Products.Commands.DeductProductStock;
-using Microsoft.AspNetCore.Http.HttpResults;
 using CleanArchitecture.Application.Reviews.Commands.CreateReview;
-
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace CleanArchitecture.Web.Endpoints;
 
@@ -14,8 +13,7 @@ public class Products : IEndpointGroup
         groupBuilder.MapPost(DeductStock, "{id}/deduct-stock");
 
         groupBuilder.MapPost("/{productId:int}/reviews", CreateProductReview)
-        .WithName("CreateProductReview");
-
+            .WithName("CreateProductReview");
     }
 
     [EndpointSummary("Deduct product stock")]
@@ -41,19 +39,21 @@ public class Products : IEndpointGroup
         return TypedResults.Ok(result);
     }
 
-    public static async Task<IResult> CreateProductReview(
-    ISender sender,
-    int productId,
-    CreateReviewCommand command)
-{
-    if (productId != command.ProductId)
+    [EndpointSummary("Create product review")]
+    [EndpointDescription("Creates a verified review for an existing product and recalculates its average rating and total review count.")]
+    public static async Task<Results<Created<int>, BadRequest<string>, NotFound>> CreateProductReview(
+        ISender sender,
+        int productId,
+        CreateReviewCommand command)
     {
-        return Results.BadRequest("Route productId does not match command ProductId.");
+        if (productId != command.ProductId)
+        {
+            return TypedResults.BadRequest("Route productId does not match command ProductId.");
+        }
+
+        var reviewId = await sender.Send(command);
+
+        return TypedResults.Created($"/api/Products/{productId}/reviews/{reviewId}", reviewId);
     }
-
-    var reviewId = await sender.Send(command);
-
-    return Results.Created($"/api/Products/{productId}/reviews/{reviewId}", reviewId);
 }
 
-}
