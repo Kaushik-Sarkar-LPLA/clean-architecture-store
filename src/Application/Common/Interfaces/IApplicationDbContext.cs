@@ -14,5 +14,7 @@ public interface IApplicationDbContext
 
     DbSet<Review> Reviews { get; } 
 
+    DbSet<RefreshToken> RefreshTokens { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

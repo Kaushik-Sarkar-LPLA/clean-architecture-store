@@ -15,4 +15,6 @@ public interface IIdentityService
     Task<Result> DeleteUserAsync(string userId);
 
     Task<(bool Succeeded, string UserId, string Email, IList<string> Roles)> AuthenticateAsync(string email, string password);
+
+    Task<(bool Found, string Email, IList<string> Roles)> GetUserDetailsAsync(string userId);
 }

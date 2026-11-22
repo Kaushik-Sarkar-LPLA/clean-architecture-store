@@ -94,6 +94,18 @@ public class IdentityService : IIdentityService
         return (true, user.Id, user.Email ?? user.UserName ?? email, roles);
     }
 
+    public async Task<(bool Found, string Email, IList<string> Roles)> GetUserDetailsAsync(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return (false, string.Empty, Array.Empty<string>());
+        }
+
+        var roles = await _userManager.GetRolesAsync(user);
+        return (true, user.Email ?? user.UserName ?? string.Empty, roles);
+    }
+
     public async Task<Result> DeleteUserAsync(string userId)
     {
         var user = await _userManager.FindByIdAsync(userId);
