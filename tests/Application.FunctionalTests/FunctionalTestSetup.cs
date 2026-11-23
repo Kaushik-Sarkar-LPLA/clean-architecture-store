@@ -7,6 +7,7 @@ public class FunctionalTestSetup
 {
     internal static IServiceScopeFactory ScopeFactory { get; private set; } = null!;
     internal static DatabaseResetter? DbResetter { get; private set; }
+    internal static HttpClient CreateClient() => _factory!.CreateClient();
 
     private static WebApiFactory? _factory;
     private static DistributedApplication? _app;
@@ -14,31 +15,36 @@ public class FunctionalTestSetup
     [OneTimeSetUp]
     public async Task OneTimeSetUp()
     {
-        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
-        var cancellationToken = cts.Token;
+        var connectionString = Environment.GetEnvironmentVariable("TEST_DB_CONNECTION_STRING");
 
-        var builder = await DistributedApplicationTestingBuilder
-            .CreateAsync<Projects.TestAppHost>(
-                args: [],
-                configureBuilder: (options, _) =>
-                {
-                    options.DisableDashboard = true;
-                });
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+            var cancellationToken = cts.Token;
 
-        builder.Configuration["ASPIRE_ALLOW_UNSECURED_TRANSPORT"] = "true";
+            var builder = await DistributedApplicationTestingBuilder
+                .CreateAsync<Projects.TestAppHost>(
+                    args: [],
+                    configureBuilder: (options, _) =>
+                    {
+                        options.DisableDashboard = true;
+                    });
 
-        _app = await builder
-            .BuildAsync(cancellationToken)
-            .WaitAsync(cancellationToken);
+            builder.Configuration["ASPIRE_ALLOW_UNSECURED_TRANSPORT"] = "true";
 
-        await _app
-            .StartAsync(cancellationToken)
-            .WaitAsync(cancellationToken);
+            _app = await builder
+                .BuildAsync(cancellationToken)
+                .WaitAsync(cancellationToken);
 
-        await _app.ResourceNotifications.WaitForResourceHealthyAsync(
-            Services.Database, cancellationToken);
+            await _app
+                .StartAsync(cancellationToken)
+                .WaitAsync(cancellationToken);
 
-        var connectionString = (await _app.GetConnectionStringAsync(Services.Database))!;
+            await _app.ResourceNotifications.WaitForResourceHealthyAsync(
+                Services.Database, cancellationToken);
+
+            connectionString = (await _app.GetConnectionStringAsync(Services.Database))!;
+        }
 
         _factory = new WebApiFactory(connectionString);
         ScopeFactory = _factory.Services.GetRequiredService<IServiceScopeFactory>();
