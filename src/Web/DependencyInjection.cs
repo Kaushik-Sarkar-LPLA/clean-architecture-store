@@ -5,14 +5,18 @@ using CleanArchitecture.Application.Common.Interfaces;
 using CleanArchitecture.Infrastructure.Data;
 using CleanArchitecture.Web.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
 public static class DependencyInjection
 {
+    private const string BearerOrCookieScheme = "BearerOrCookie";
+
     public static void AddWebServices(this IHostApplicationBuilder builder)
     {
         builder.Services.AddDatabaseDeveloperPageExceptionFilter();
@@ -44,8 +48,23 @@ public static class DependencyInjection
 
         builder.Services.AddAuthentication(options =>
             {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = BearerOrCookieScheme;
+                options.DefaultAuthenticateScheme = BearerOrCookieScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddPolicyScheme(BearerOrCookieScheme, "JWT Bearer or Identity Cookie", options =>
+            {
+                options.ForwardDefaultSelector = context =>
+                {
+                    string? authorization = context.Request.Headers[HeaderNames.Authorization];
+                    if (!string.IsNullOrEmpty(authorization) &&
+                        authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return JwtBearerDefaults.AuthenticationScheme;
+                    }
+
+                    return IdentityConstants.ApplicationScheme;
+                };
             })
             .AddJwtBearer(options =>
             {

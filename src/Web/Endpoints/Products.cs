@@ -1,8 +1,8 @@
-using CleanArchitecture.Application.Common.Interfaces;
 using CleanArchitecture.Application.Products.Commands.DeductProductStock;
+using CleanArchitecture.Application.Products.Commands.DeleteProduct;
 using CleanArchitecture.Application.Reviews.Commands.CreateReview;
+using CleanArchitecture.Domain.Constants;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.EntityFrameworkCore;
 
 namespace CleanArchitecture.Web.Endpoints;
 
@@ -16,10 +16,10 @@ public class Products : IEndpointGroup
 
         groupBuilder.MapPost("/{productId:int}/reviews", CreateProductReview)
             .WithName("CreateProductReview")
-            .RequireAuthorization(policy => policy.RequireRole("Customer", "Admin"));
+            .RequireAuthorization(policy => policy.RequireRole(Roles.Customer, Roles.Administrator));
 
         groupBuilder.MapDelete(DeleteProduct, "{id:int}")
-            .RequireAuthorization(policy => policy.RequireRole("Admin"));
+            .RequireAuthorization(policy => policy.RequireRole(Roles.Administrator));
     }
 
     [EndpointSummary("Deduct product stock")]
@@ -63,22 +63,10 @@ public class Products : IEndpointGroup
     }
 
     [EndpointSummary("Delete a product")]
-    [EndpointDescription("Deletes the product with the specified ID. Restricted to Admin role.")]
-    public static async Task<Results<NoContent, NotFound>> DeleteProduct(
-        IApplicationDbContext context,
-        int id,
-        CancellationToken cancellationToken)
+    [EndpointDescription("Deletes the product with the specified ID. Restricted to Administrator role.")]
+    public static async Task<NoContent> DeleteProduct(ISender sender, int id)
     {
-        var product = await context.Products
-            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
-
-        if (product is null)
-        {
-            return TypedResults.NotFound();
-        }
-
-        context.Products.Remove(product);
-        await context.SaveChangesAsync(cancellationToken);
+        await sender.Send(new DeleteProductCommand(id));
 
         return TypedResults.NoContent();
     }
