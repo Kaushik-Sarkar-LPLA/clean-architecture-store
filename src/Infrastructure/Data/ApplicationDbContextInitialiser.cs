@@ -81,6 +81,13 @@ public class ApplicationDbContextInitialiser
             await _roleManager.CreateAsync(administratorRole);
         }
 
+        var customerRole = new IdentityRole(Roles.Customer);
+
+        if (_roleManager.Roles.All(r => r.Name != customerRole.Name))
+        {
+            await _roleManager.CreateAsync(customerRole);
+        }
+
         // Default users
         var administrator = new ApplicationUser { UserName = "administrator@localhost", Email = "administrator@localhost" };
 

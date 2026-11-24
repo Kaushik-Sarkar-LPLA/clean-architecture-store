@@ -12,7 +12,10 @@ public class WebApiFactory(string connectionString) : WebApplicationFactory<Prog
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder
-            .UseSetting("ConnectionStrings:CleanArchitectureDb", connectionString);
+            .UseSetting("ConnectionStrings:CleanArchitectureDb", connectionString)
+            .UseSetting("JwtSettings:Secret", "SuperSecretTestKeyForFunctionalTests2026Minimum32Chars!")
+            .UseSetting("JwtSettings:Issuer", "https://store.pixilens.online")
+            .UseSetting("JwtSettings:Audience", "https://store.pixilens.online");
 
         builder.ConfigureTestServices(services =>
         {

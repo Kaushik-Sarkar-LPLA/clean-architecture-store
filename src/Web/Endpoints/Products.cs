@@ -1,5 +1,7 @@
 using CleanArchitecture.Application.Products.Commands.DeductProductStock;
+using CleanArchitecture.Application.Products.Commands.DeleteProduct;
 using CleanArchitecture.Application.Reviews.Commands.CreateReview;
+using CleanArchitecture.Domain.Constants;
 using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace CleanArchitecture.Web.Endpoints;
@@ -13,7 +15,11 @@ public class Products : IEndpointGroup
         groupBuilder.MapPost(DeductStock, "{id}/deduct-stock");
 
         groupBuilder.MapPost("/{productId:int}/reviews", CreateProductReview)
-            .WithName("CreateProductReview");
+            .WithName("CreateProductReview")
+            .RequireAuthorization(policy => policy.RequireRole(Roles.Customer, Roles.Administrator));
+
+        groupBuilder.MapDelete(DeleteProduct, "{id:int}")
+            .RequireAuthorization(policy => policy.RequireRole(Roles.Administrator));
     }
 
     [EndpointSummary("Deduct product stock")]
@@ -55,5 +61,13 @@ public class Products : IEndpointGroup
 
         return TypedResults.Created($"/api/Products/{productId}/reviews/{reviewId}", reviewId);
     }
-}
 
+    [EndpointSummary("Delete a product")]
+    [EndpointDescription("Deletes the product with the specified ID. Restricted to Administrator role.")]
+    public static async Task<NoContent> DeleteProduct(ISender sender, int id)
+    {
+        await sender.Send(new DeleteProductCommand(id));
+
+        return TypedResults.NoContent();
+    }
+}
