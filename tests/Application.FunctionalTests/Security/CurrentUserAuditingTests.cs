@@ -15,19 +15,22 @@ public class CurrentUserAuditingTests : TestBase
     [Test]
     public async Task CreateAndUpdateAuditableEntity_WithAuthenticatedJwt_PersistsCreatedByAndLastModifiedBy()
     {
-        // Arrange
-        var userId = await TestApp.RunAsUserAsync("auditor@pixilens.online", "Auditor1234!", [Roles.Customer]);
+        var jwtCreatorId = await TestApp.RunAsUserAsync("jwt-creator@pixilens.online", "Creator1234!", [Roles.Customer]);
+        var jwtModifierId = await TestApp.RunAsUserAsync("jwt-modifier@pixilens.online", "Modifier1234!", [Roles.Customer]);
+        var ambientMockUserId = await TestApp.RunAsUserAsync("ambient-user@pixilens.online", "Ambient1234!", [Roles.Customer]);
+        TestApp.GetUserId().ShouldBe(ambientMockUserId);
+
         using var scope = FunctionalTestSetup.ScopeFactory.CreateScope();
         var jwtTokenService = scope.ServiceProvider.GetRequiredService<IJwtTokenService>();
-        var tokenResult = await jwtTokenService.GenerateAccessTokenAsync(
-            userId,
-            "auditor@pixilens.online",
+
+        var creatorToken = await jwtTokenService.GenerateAccessTokenAsync(
+            jwtCreatorId,
+            "jwt-creator@pixilens.online",
             [Roles.Customer]);
 
         using var client = FunctionalTestSetup.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenResult.AccessToken);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", creatorToken.AccessToken);
 
-        // Act 1: Create an auditable TodoList
         var createResponse = await client.PostAsJsonAsync(
             "/api/TodoLists",
             new CreateTodoListCommand { Title = "Audited Shopping List" });
@@ -36,16 +39,14 @@ public class CurrentUserAuditingTests : TestBase
         var listId = await createResponse.Content.ReadFromJsonAsync<int>();
         var createdList = await TestApp.FindAsync<TodoList>(listId);
 
-        // Assert 1: CreatedBy and LastModifiedBy equal the JWT user ID
         createdList.ShouldNotBeNull();
-        createdList.CreatedBy.ShouldBe(userId);
-        createdList.LastModifiedBy.ShouldBe(userId);
+        createdList.CreatedBy.ShouldBe(jwtCreatorId);
+        createdList.CreatedBy.ShouldNotBe(ambientMockUserId);
+        createdList.LastModifiedBy.ShouldBe(jwtCreatorId);
 
-        // Act 2: Modify the auditable TodoList as a second authenticated user
-        var modifierId = await TestApp.RunAsUserAsync("modifier@pixilens.online", "Modifier1234!", [Roles.Customer]);
         var modifierToken = await jwtTokenService.GenerateAccessTokenAsync(
-            modifierId,
-            "modifier@pixilens.online",
+            jwtModifierId,
+            "jwt-modifier@pixilens.online",
             [Roles.Customer]);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", modifierToken.AccessToken);
 
@@ -56,9 +57,9 @@ public class CurrentUserAuditingTests : TestBase
 
         var updatedList = await TestApp.FindAsync<TodoList>(listId);
 
-        // Assert 2: CreatedBy remains original creator; LastModifiedBy updates to modifierId
         updatedList.ShouldNotBeNull();
-        updatedList.CreatedBy.ShouldBe(userId);
-        updatedList.LastModifiedBy.ShouldBe(modifierId);
+        updatedList.CreatedBy.ShouldBe(jwtCreatorId);
+        updatedList.LastModifiedBy.ShouldBe(jwtModifierId);
+        updatedList.LastModifiedBy.ShouldNotBe(ambientMockUserId);
     }
 }
