@@ -1,8 +1,12 @@
-﻿namespace CleanArchitecture.Application.Common.Interfaces;
+namespace CleanArchitecture.Application.Common.Interfaces;
 
 public interface IUser
 {
     string? Id { get; }
-    List<string>? Roles { get; }
 
+    string? Email { get; }
+
+    IEnumerable<string> Roles { get; }
+
+    bool IsAuthenticated { get; }
 }
